@@ -4,7 +4,7 @@
 
 ### Současný stav
 
-Anonymizovaný dataset o výsledcích léčby pacientů s mozkovou příhodou ve FN Plzeň za 2016-2017. U pacientů je mimo jiné indikován etiologický typ mozkové mrtvice, klinický výsledek (škála mRS), míra vstupního deficitu (škála NIHSS), přítomnost rizikových faktorů. Data nejsou úplná, často jsou některé hodnoty neznámé. 
+Anonymizovaný dataset o výsledcích léčby pacientů s mozkovou příhodou ve FN Plzeň za 2016-2017. U pacientů je mimo jiné indentifikován etiologický typ mozkové mrtvice, klinický výsledek (škála mRS), míra vstupního deficitu (škála NIHSS), přítomnost rizikových faktorů. Data nejsou úplná, často jsou některé hodnoty neznámé. 
 
 ### Úkol
 1. Zhodnoťte závislosti dobrého klinického výsledku (mRS-out: hodnota 1 oproti 0), případně mortalitu (mRS – 1Y: hodnota 6 oproti 0-5) jednorozměrnou regresí na: 
