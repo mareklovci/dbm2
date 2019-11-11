@@ -96,6 +96,23 @@ def main():
     df['TSS prop.'] = df['TSS prop.'].fillna(0)  # replace NaN with 0
     df['TSS prop.'] = df['TSS prop.'].astype(int)  # make this column's values numerical
 
+    df.hist(column='Věk')
+    plt.show()
+
+    df.hist(column='TSS příjem')
+    plt.show()
+
+    df.hist(column='TSS prop.')
+    plt.show()
+
+    df.hist(column='mRS-out')
+    plt.show()
+
+    diagnosis_transformed = pd.DataFrame({'Numerical diagnosis': [int(x[4]) for x in df['Etiolog. klas.']]})
+    df = pd.concat([df, diagnosis_transformed], axis=1)
+    df.hist(column='Numerical diagnosis')
+    plt.show()
+
     # Age to mRS comparison
     plot_logistic_regression(df['Věk'], df['mRS-out'])
 
