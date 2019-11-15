@@ -528,3 +528,4 @@ pip-selfcheck.json
 
 # Do not add data to GIT
 data.xlsx
+data.csv
