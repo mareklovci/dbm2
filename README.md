@@ -17,7 +17,12 @@ Anonymizovaný dataset o výsledcích léčby pacientů s mozkovou příhodou ve
       
 Pozn.: 
 Hodnota mRS-out = 7 je u chybějících dat, tyto pacienty je nutno z analýzy vyloučit, případně zpětně podle výsledků analýzy do diskuse porovnat strukturu těchto pacientů se strukturou hodnoceného souboru.
-Je otázka, jak se postavit k problému MRS Před s hodnotou 3, kdy už byl vstupní stav "nedobrý".
+Je otázka, jak se postavit k problému mRS Před s hodnotou 3, kdy už byl vstupní stav "nedobrý".
+
+## Scripts
+
+1. `cleaning.py` vytvoří ze zadaného datasetu nový, vyčištěný a bavený nepotřebých sloupců
+2. `app.py` načte vyčištěný dataset a vytvoří grafy pro analýzu
 
 ## Python
 

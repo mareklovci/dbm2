@@ -1,296 +1,212 @@
 \section{Zadání}
 
-Je dán anonymizovaný dataset o výsledcích léčby pacientů s mozkovou příhodou ve FN Plzeň za 2016-2017.
+Je dán anonymizovaný dataset o výsledcích léčby pacientů s mozkovou příhodou ve Fakultní nemocnici Plzeň za roky 2016 a 2017.
 U pacientů je mimo jiné identifikován etiologický typ mozkové mrtvice, klinický výsledek (škála mRS), míra vstupního deficitu (škála NIHSS), přítomnost rizikových faktorů.
 Data nejsou úplná, často jsou některé hodnoty neznámé.
 
-Prvním úkolem je zhodnotit závislosti dobrého klinického výsledku (mRS-out: hodnota 1 oproti 0), případně mortalitu (mRS – 1Y: hodnota 6 oproti 0-5) jednorozměrnou regresí na věku, pohlaví, vstupního NIHSS (TSS příjem) a rozdílu výstupní-vstupní NIHSS.
-Druhý úkol spočívá ve vytvoření Kaplan–Meierových křivek přežití pro jednotlivé stanovené diagnózy a podrobně popsat proces vytvoření a její vlastnosti.
+\subsection{Úkoly}
 
-\section{Spekulativní exekuce instrukcí}
+\begin{enumerate}
+    \item Zhodnoťte závislosti dobrého klinického výsledku (mRS-out: hodnota 1 oproti 0), případně mortalitu (mRS-1Y: hodnota 6 oproti 0-5) jednorozměrnou regresí na věku, pohlaví, vstupního NIHSS (TSS příjem) a rozdílu výstupní-vstupní NIHSS.
+    \item Vytvořte Kaplan–Meierovy křivky přežití pro jednotlivé stanovené diagnózy a podrobně popište proces vytvoření a její vlastnosti.
+\end{enumerate}
 
-Spekulativní provádění instrukcí je optimalizační technika, při které počítač (procesor) vykonává dopředu úkoly, aniž by věděl, že budou v budoucnu opravdu potřeba.
-To provádí s cílem předejít zpoždění.
+\section{Zhodnocení závislostí}
 
-Dnešní počítače používají jednu z forem spekulativní exekuce - prediktivní exekuci.
-Ta za pomoci mechanismů, jako např. \enquote{branch predictor} odhadne větvení programu a danou cestu předpočítá.
-Jestliže se předpověď ukáže jako pravdivá, je \enquote{commitnuta}.
-V případě že se ukáže, že předpověď byla špatná, je nutné výpočet zahodit a vykonat správné instrukce.
-V případě, že se předpověď prediktoru ukáže jako správná, tak vede ke zrychlení běhu programu.
-
-Dalšími formami spekulativní exekuce jsou např. \enquote{greedy execution} (při které se předpočítají obě možnosti podmíněného větvení) nebo \enquote{lazy evaluation}, která sama o sobě nezahrnuje žádnou spekulaci.
-Tyto koncepty se využívají ve světě softwaru a o jejich praktické využití pro hardware jsem se nezajímal.
-
-\section{Meltdown}\label{sec:meltdown}
-
-Moderní operační systémy zajišťují tzv. paměťovou izolaci - uživatelské programy (procesy) nemohou číst z paměťového bloku vyhrazeného pro jiné procesy, obzvláště ne z bloku vyhrazeného pro jádro operačního systému.
-\textit{Meltdown} toto omezení zcela překonává a to na hardwarové úrovni.
-Útočník napíše kód, který se spustí během spekulativního procesu.
-Kód čte data z paměťových bloků, ze kterých nemá práva číst, jelikož ale vše probíhá během spekulativního okna, tak tyto práva jsou teprve kontrolována.
-Po dokončení kontroly práv je zjištěno, že program práva na čtení z dané paměti nemá a data jsou zahozena.
-Útočník následně provede tzv. \textit{Flush+Reload} útok (\textit{cache side-channel attack}), kterým zjistí nejen kam se zahozená data uložila, ale rovnou i obsah daných paměťových buněk.
-
-Pro útočníka by bylo velice výhodné číst data, které zpracovává jádro operačního systému.
-Před zveřejněním diskutovaných hrozeb využíval \textit{Linux} randomizaci adresního prostoru \textit{kernelu (systémového jádra)} (tzv. \textit{KASLR}), ale tento zabezpečovací mechanismus se dal relativně snadno obejít.
-Nyní však implementuje vylepšení (tzv. \textit{KAISER} nebo \textit{KPTI}), který zajišťuje, že tabulka indexující uživatelský adresní prostor obsahuje pouze naprosto nezbytné odkazy do adresního prostoru \textit{systémového jádra operačního systému Linux}.
-Toto opatření se ukázalo jako dostačující ochrana proti útokům typu \textit{Meltdown}.
-Nyní ale systém musí provádět kroky navíc, vždy, když uživatelská aplikace požádá o akci operačního systému (tzv. systémové volání).
-Tím se přichází o část výkonu, která je v~některých případech až v řádu desítek procent (z nalezených dat se zdá, že snížení výhonu je ve většině případů \textit{cca} 5 \%, ale ve výjimečných případech může dosáhnout až 30 \%).
-Problém s tímto nebezpečím se netýká všech procesorů.
-Nejvíce ovlivněným výrobcem (avšak ne jediným) je \textit{Intel}.
-
-\section{Spectre}
-
-V původní práci o útoku typu \textit{Spectre} jsou popsány jeho dvě základní varianty.
-Důležitá informace je ta, že na rozdíl od \textit{Meltdown} neumožňuje \textit{Spectre} číst data z celého adresního prostoru, ale pouze z prostoru vyhrazeného pro danou aplikaci.
-I tak ale může dojít k odcizení citlivých informací.
-
-\subsection{První varianta}\label{sec:spectre-v1}
-
-První varianta je velice podobná útoku typu \textit{Meltdown}, kdy může útočník při spekulativním vykonávání kódu načíst data na která nemá práva a po jejich zahození je přečíst z \textit{cache} procesoru.
-
-Útočník nechá při trénovací fázi načítat procesor data, která jsou pak použita k lokalizaci jiných dat.
-Dotazy na data v rozsahu na která má práva to ale nekončí a útočník se dál dotazuje i na data mimo povolený rozsah.
-Procesor v rámci časových úspor načte i data mimo povolený rozsah.
-Po zjištění nesrovnalosti procesor data zahodí.
-
-\subsection{Druhá varianta}\label{sec:spectre-v2}
-
-Touto variantou útoku lze natrénovat tzv. \enquote{Branch Target Buffer} tak, že začne provádět kód - \textit{gadget}, jenž bude mít přístup k datům, která jsou předmětem zájmu a která by měla být nepřístupná.
-Výsledky jsou opět potlačeny, ale vedlejší účinky provedení daných instrukcí zůstávají.
-
-\section{Foreshadow a další varianty Spectre a Meltdown}
-
-Základními variantami \textit{Spectre} a \textit{Meltdown} problémy s architekturou procesorů bohužel nekončí.
-V průběhu roku 2018 přibyly další výzkumy a objevy variant a nových typů zranitelností na \textit{CPU}.
-Takovými případy jsou \textit{Foreshadow}, známý též jako \enquote{L1 Terminal Fault (\textbf{L1TF})}, nové varianty \textit{Spetre} a \textit{Meltdown} zmíněné práci \enquote{A Systematic Evaluation of Transient Execution Attacks and Defenses} ale i problémy vzniklé kombinací různých chyb - například \textit{Spectre v2} a \textit{Hyper-Threadingu}.
-
-\begin{quote}
-    Problém, o kterém je nyní řeč, se týká využitelnosti chyby \textbf{Spectre v2} v kombinaci s děravým \textit{Hyper-Threadingem} v procesorech \textit{Intel}.
-    Ty totiž mají tu nepříjemnou vlastnost, že \textit{HT} vlákna běžící na jednom fyzickém \textit{CPU} jádru sdílejí datovou \textit{L1 cache}, takže za pomoci \textbf{Spectre v2} si může daný proces číst data procesu druhého.
-    Do \textit{linuxového} jádra tak zamířily \textit{patche}, které měly tento problém řešit.
-    Záplatě se obecně říká \textit{STIBP (Single Thread Indirect Branch Predictors)} a najdeme ji v \textbf{Linuxu 4.20}.
-    
-    \textit{Phoronix} tuto verzi přeměřil, přičemž dospěl k hodně smutným číslům: záplata snižuje procesorový výkon v mezních případech až o 50 \%, tedy na polovinu.
-    Vzhledem k efektivitě \textit{Hyper-Threadingu} v současných \textit{CPU Intelu} lze říci, že výkonnostní dopad aplikace \textit{STIBP} je přibližně stejně dramatický, jako samotné vypnutí \textit{Hyper-Threadingu}.
-\end{quote}
+Abychom mohli objektivně zhodnotit závislosti přítomné v datech je nutné znát data samotná.
+Podívejme se nejdříve na histogramy ukazující počty pacientů vůči jejich věku, diagnózám a hodnotě mRS po jednom roce.
 
 \begin{figure}[htbp]
-    \includegraphics[width=.6\textwidth]{img/klasifikace-spectre-meltdown.png}
+    \includegraphics[width=.6\textwidth]{img/image_0.pdf}
     \centering
-    \caption{Klasifikační strom s demonstrovanými (červené, tučné), s negativními výsledky (zelené, přerušované) a nově prezentovanými útoky}
-    \label{img:klasifikace}
+    \caption{Histogram počtu pacientů v závislosti na věku}
+    \label{img:age-histogram}
 \end{figure}
 \FloatBarrier
 
-13. listopadu 2018 byl vydán článek shrnující dosud existující varianty útoků.
-Výzkumníci v tomto článku přidali i 8 nových variant útoku \textit{Meltdown} a 5 variant \textit{Spectre} včetně \enquote{proofs-of-concept} pro 7~z~nich - 6 variant \textit{Meltdown} se zatím nepodařilo prakticky dokázat, vše je shrnuto v obrázku \ref{img:klasifikace}.
-
-\subsection{Objasnění pojmů a vztažení nové kategorizace na původní}
-
-Následující výčet pojmů je z převážné části přebrán z článku \enquote{Seven new Spectre and Meltdown attacks found}, ale je doplněn o některá chybějící data.
-Tento výčet by měl sloužit jako objasnění, kde se v~nové kategorizaci nachází \textit{Spectre-v1}, \textit{Spectre-v2}, \textit{Meltdown} a také jako přehled s vysvětlením použitých zkratek.
-
-\subsubsection{Kategorizace \textit{Meltdown}}
-
-\begin{itemize}
-    \item Meltdown-NM: Floating Point Unit (FPU) state information leakage flaw; linux kernels that follow the "Lazy FPU Restore" scheme are vulnerable to the FPU state information leakage issue; device-not-available exception known as \textbf{\#NM} exception is thrown
-    \item Meltdown-AC: tried to exploit memory \textbf{alignment check} exceptions
-    \item Meltdown-DE: tried to exploit \textbf{division} (by zero) \textbf{errors}
-    \item Meltdown-PF: named after \textbf{Page Fault} \textbf{\#PF} exception
-    \begin{itemize}
-        \item Meltdown-US: reads kernel memory from \textbf{user space} on pipelined processors that do not transiently enforce the user/supervisor flag
-        \item Meltdown-P: attacking faults of pages without \textbf{present} bit
-        \item Meltdown-RW: this is in same out-of-order address access of otherwise \textbf{read or write} protected pages, where even content of read or write protected pages could be leaked
-        \item Meltdown-PK: bypasses memory \textbf{protection keys} on Intel CPUs
-        \item Meltdown-XD: tried to exploit non-executable memory
-        \item Meltdown-SM: tried to exploit the \textbf{supervisor mode} access prevention (SMAP) mechanism
-    \end{itemize}
-    \item Meltdown-UD: tried to exploit invalid opcode exception - Invalid Opcode, known as \textbf{\#UD}
-    \item Meltdown-SS: tried to exploit out-of-limit segment accesses - \textbf{Stack-Segment} fault
-    \item Meltdown-BR: exploits an x86 bound instruction on Intel and AMD - \textbf{Bound Range} Exceeded
-    \begin{itemize}
-        \item Meltdown-MPX: MPX stands for \textbf{Memory Protection eXtensions}
-        \item Meltdown-BND
-    \end{itemize}
-    \item Meltdown-GP: \textbf{General Protection} Fault
-\end{itemize}
-
-\subsubsection{Kategorizace \textit{Spectre}}
-
-Kategorizace útoků typu \textit{Spectre} je založena na rozlišení toho, který z predikčních mechanismů je využit (\textit{Pattern History Table} (PHT), \textit{Branch Target Buffer} (BTB) nebo \textit{Return Stack Buffer} (RSB)) a který mechanismus se využije k jeho natrénování (\textit{in-place}, nebo \textit{out-of-place}).
-
-\begin{itemize}
-    \item Spectre-PHT: exploits the \textbf{Pattern History Table}
-    \item Spectre-BTB: exploits the \textbf{Branch Target Buffer}
-    \item Spectre-STL: exploits the CPUs memory disambiguation prediction, specifically \textbf{store-to-load} forwarding (STLF)
-    \item Spectre-RSB: exploits the \textbf{Return Stack Buffer}
-\end{itemize}
-
-\subsection{Negativní výsledky}
-
-Autorům článku \textit{A Systematic Evaluation of Transient Execution Attacks and Defenses} se nepodařilo prokázat uskutečnitelnost útoků souvisejících s načítáním instrukcí do CPU - \textbf{Meltdown-XD} při kterém se pokusili spustit program (instrukce) nacházející v tzv. \textit{non-executable memory} (část paměti obsahující strojový kód, při pokusu o načtení dat z jejího adresního prostoru je vyvolána výjimka) a \textbf{Meltdown-UD} (\#UD - \textit{Opcode exception}) pokoušející se procesor \enquote{donutit} vykonat nevalidní strojové instrukce.
-
-\textbf{Meltdown-SM} nesoucí svůj název podle tzv. \enquote{supervisor mode access prevention} (SMAP) je neúspěšným pokusem o zneužití příznaku udávajícího že určitý program má práva využívat všechny, včetně privilegovaných instrukcí procesoru.
-
-\subsubsection{Meltdown-AC}
-
-\textit{Alignment Check Exception (\#AC)} - v překladu \textit{výjimka kontroly zarovnání} je jedna z výjimek vygenerovaných procesorem při nastání chyby.
-
-Nezarovnaný přístup do paměti (tzv. unaligned memory access) se vyskytne v případě pokusu o čtení N bajtů dat, které začínají na adresní pozici, která není rovnoměrně dělitelná N (tzn. \( adresa \% N \neq 0 \)).
-To znamená, že například čtení 4 bajtů dat z adresy 0x10004 je v pořádku, ale čtení 4 bajtů z adresy 0x10005 by znamenalo nezarovnaný přístup do paměti a případné vyvolání výjimky.
-
-Bylo zjištěno, že výsledky nezarovnaných přístupů k paměti nezanechávají data ve struktuře procesoru.
-Důvodem je pravděpodobně to, že \#AC výjimka je vygenerována ještě před samotným vykonáváním přístupu do paměti.
-Tím pádem varianta Meltdown-AC není zranitelností a není zneužitelná.
-
-\subsubsection{Meltdown-DE}
-
-V článku \textit{A Systematic Evaluation of Transient Execution Attacks and Defenses} byl popsán experiment, při kterém se pokusili získat data, která mohla být teoreticky zanechána v paměti procesoru po vygenerování chyby způsobené dělením nulou.
-Podezření se však nepotvrdilo - procesory po dělení nulou vytvoří výjimku (\#DE) a nastaví příslušný registr (paměťový blok uchovávající výsledek operace) na nulu.
-Z této operace tedy neexistují žádná zneužitelná data.
-
-\subsubsection{Meltdown-SS}
-
-Posledním z nepotvrzených typů útoků cílí na zneužití \enquote{Stack-Segment Fault} (\#SS).
-\textit{Stack-Segment} je dle definice oblast paměti vyhrazená pro automatické proměnné.
-Automatická proměnná je lokální proměnná, která je alokována a dealokována automaticky, když tok programu vstupuje a opouští rozsah proměnné.
-
-Jako v předchozích případech, i pokus o přístup do této paměti vyvolá výjimku, k validaci podmínek pro její vyvolání však dochází před samotným přístupem k datům nacházejících se v paměti, kterou se útočník snaží diskreditovat.
-Nedochází tedy k žádnému úniku dat.
-
-\subsection{Ostatní útoky typ Meltdown}
-
-\subsubsection{Meltdown-NM}
-
-Popis dle seznamu \textbf{CVE} (\textit{Common Vulnerabilities and Exposures}): \textit{software} využívají metodu pro obnovu stavu \textit{FPU} (\textit{matematického koprocesoru - floating point unit}), tzv. \textbf{Lazy FP} na procesorech od společnosti Intel, může potenciálně umožnit jednomu procesu, aby získal data z jiného procesu přes spekulativní kanál.
-
-Do nedávna byl stav FPU na vyžádání ukládán a obnovován pomocí triku, při kterém použití FPU novým procesem způsobovalo chybu, která spustila logický obvod pro \enquote{save/restore} na samotném matematickém koprocesoru.
-Při spuštění nového procesu se využíval starý stav FPU, který byl při prvním opravdovém využití matematického koprocesoru nahrazen správným.
-To se dělo s cílem snížit zatížení obvodu pro přepínání úloh.
-
-Starý stav zanechává jistý otisk na struktuře procesoru, který je možné bočním kanálem extrahovat.
-Této logiky využívá útok Meltdown-NM.
-Tento problém byl na operačním systému Linux vyřešen přechodem na přímé ukládání a obnovu stavu matematického koprocesoru.
-
-\subsubsection{Meltdown-PF}
-
-Meltdown-PF sám spadá do kategorie útoků s \textit{negativními výsledky}, většina jeho podvariant jsou však legitimními útoky.
-\enquote{Supervisor Mode Access Prevention} (SMAP) je mechanismus, který zabraňuje procesům s vysokými právy (například procesy operačního systému) číst data z~adresního prostoru procesů patřících uživateli, či jiné entitě s nižšími právy.
-Výzkumníci se obávali, že takový přístup mohl zanechat v paměti procesoru data, která by byla přístupná útočníkovi.
-Tuto domněnku se nepodařilo potvrdit, jelikož nebyla ve struktuře procesoru nalezena žádná data, která mohla být zanechána po vzniku výjimky.
-Stejně jako v případě \textit{Meltdown-AC}, se výzkumný tým domnívá, že výjimka \#PF (page-fault) je vyvolána ještě před vlastní manipulací s daty na fyzických adresních prvcích a tedy neexistují data, která by mohla být ponechána v paměti.
-
-\paragraph{Meltdown-US}
-
-Tato varianta je originálním útokem \textit{Meltdown}.
-Pro jeho podrobnější popis viz kapitolu~\ref{sec:meltdown}.
-
-\paragraph{Meltdown-P}
-
-Známý též pod názvem Foreshadow nebo L1TF.
-Princip spočívá v tom, že někde v~paměti procesoru se nachází chráněný blok paměti nazývaný \textit{enkláva}.
-Když se neautorizovaný požadavek pokusí do této paměti přistoupit, tak není vyvolána výjimka a místo dotazovaných dat se předají data fiktivní.
-
-Díky tomuto mechanismu nefunguje pro získání dat z enklávy klasický útok Meltdown-US.
-Tabulka stránek (page-table) tvoří mapování mezi virtuální a fyzickou adresou paměti.
-Obsahuje pomocné informace, jako je například \enquote{present} bit, který indikuje které stránky (shluky dat) se nacházejí ve fyzické paměti.
-
-Při útoku \textit{Meltdown-P} se smaže \enquote{present} bit záznamu vedoucího do enklávy, díky tomu lze z tuto paměť načíst aniž by data byla nahrazena fiktivními daty.
-Data jsou tedy načtena, ale během jejich zpracovávání procesor zjistí, že došlo k neautorizovanému přístupu, je vyvolána \#PF výjimka a data jsou zahozena stejným způsobem jako při útoku \textit{Meltdown-US}.
-
-\paragraph{Meltdown-RW}
-
-Tento typ útoku je mezi \textit{Meltdown} výjimečný tím, že se nesnaží získat data napříč úrovněmi privilegovaného režimu procesoru, ale překonává zabezpečení na dané bezpečnostní úrovni.
-Bylo zjištěno, že při spekulativním vykonávání instrukcí je ignorován příznak umístěný na \textit{tabulce stránek} určující práva pro čtení a~zápis.
-Útočník může tím pádem přepsat data určená jen pro čtení, čímž je zcela překonán softwarový bezpečnostní mechanismus zvaný \enquote{sandbox}, který se spoléhá na hardwarové vymáhání přístupu k datům určeným pouze pro čtení.
-
-\paragraph{Meltdown-PK}
-
-Tímto útokem lze číst data chráněná technologií Intel Protection Keys.
-Varianta byla prezentována a dokázána v článku \textit{A Systematic Evaluation of Transient Execution Attacks and Defenses}.
-
-\textit{Intel Protection Keys} je technologie nacházející se na některých procesorech od společnosti \textit{Intel} umožňující uživatelským procesům měnit práva tomuto procesu náležícím stránkám v tabulce stránek.
-To má za cíl umožnit vývoj bezpečnějších aplikací.
-Zajímavé je, že proti tomuto útoku neexistuje softwarová záplata - pokud uživatelský program používá \textit{Intel Protection Keys}, tak je zranitelný.
-Chybu musí opravit \textit{Intel} v nové verzi procesorů.
-
-\subsubsection{Meltdown-BR}
-
-Pro efektivní vývoj softwaru procesory poskytují nástroje jako je například výjimka \textit{bound range exceeded (\#BR)} upozorňující na iterování přes indexy mimo pole.
-\textit{Meltdown-BR} poskytuje způsob, jak obejít kontroly na procesoru, které vyvolávají \#BR výjimku.
-Tím je umožněno číst data za povolený rozsah odpovídající velikosti iterovaného pole a získat tak informace, ke kterým za normálních okolností nemá útočník přístup.
-
-O variantách \textbf{Meltdown-MPX} a \textbf{Meltdown-BND} se mi nepodařilo zjistit dostatek informací, abych o nich mohl podrobněji referovat.
-O \textbf{Meltdown-MPX} pojednává původní článek vydaný Intelem, k \textbf{Meltdown-BND} jsem materiál nenalezl.
-
-\subsubsection{Meldown-GP}
-
-Tato varianta umožňuje útočníkovi číst data z registrů procesoru vyhrazených pro operační systém.
-Bylo zjištěno, že ačkoliv je po pokusu o přístup do takové paměti vyvolána \#GP (\textit{general protection fault}) výjimka, jsou data i přesto dostupná v případě, že výjimka vyvstala při spekulativním vykonávání instrukcí.
-Za normálních okolností nepřístupná data o systému mohou být získána postranními kanály (např. již zmíněným útokem \textit{Flush+Reload}).
-
-\subsection{Útoky typu Spectre a pojmy}
+Z histogramu~\ref{img:age-histogram} vyplývá, že většina pacientů ve studii je starší 60 let.
+Data odpovídají trendu výskytu ischemických příhod, které se v populaci vyskytují výrazně více právě od této věkové hranice.
 
 \begin{figure}[htbp]
-    \includegraphics[width=.8\textwidth]{img/spectre-1.png}
+    \includegraphics[width=.6\textwidth]{img/image_1.pdf}
     \centering
-    \caption{Shrnutí variant Spectre, jejich známosti, adresního prostoru na který je možno útočit a~ovlivněný výrobce/architektuar procesorů.}
-    \label{img:spectre}
+    \caption{Histogram počtu pacientů v závislosti na hodnotě mRS po jenom roce}
+    \label{img:mrs-histogram}
 \end{figure}
-%\FloatBarrier
+\FloatBarrier
 
-\subsubsection{Spectre-PHT}
+Histogram číslo~\ref{img:mrs-histogram} napovídá, největší procento z celkového počtu pacientů se nedožilo jednoho roku od ischemické příhody.
+Na druhou stranu, vysoké procento pacientů žilo a to dokonce s žádnými následky (hodnota 1 na histogramu) či bez zřetelného omezení, schopno vykonávat běžné denní aktivity (hodnota 2).
 
-PHT (Pattern History Table) je struktura sloužící jako prediktor výsledků operací.
-Tato struktura (tabulka) je předtrénována tak, aby načetla načetla data, na která nemá útočník právo.
-Tento útok je originální variantou útoku \textit{Spectre-v1}.
+\begin{figure}[htbp]
+    \includegraphics[width=.6\textwidth]{img/image_2.pdf}
+    \centering
+    \caption{Histogram počtu pacientů v závislosti na diagnóze}
+\end{figure}
+\FloatBarrier
 
-\subsubsection{Spectre-BTB}
+Třetí histogram ukazuje, že v nasbíraných datech se nejvíce vyskytují pacienti s diagnózou číslo 4.
+Nedostatek dat o jiných diagnózách zcela jistě ovlivní výsledky z Kaplan–Meierovy analýzy a pravděpodobně by tedy nebylo žádoucí vyvozovat z výsledných křivek statisticky relevantní závěry.
 
-Originální útok \textit{Spectre-v2}.
-\enquote{Branch Target Predictor} je část procesoru, která předpovídá výsledek kódu nacházející se v podmínkové větvi programu.
-\enquote{Branch Target Buffer} (BTB) je vyrovnávací paměť, která uchovává výsledky, na rozdíl od \textit{PHT} je ale separátní pro každou podmíněnou větev.
-Na rozdíl od Spetre-PHT, kde útočník přetrénuje mechanismus validními hodnotami, Spetre-BTB přetrénuje mechanismus vlastními škodlivými daty.
-Díky tomu si útočník může navolit data tak, že směřují na paměť obsahující tzv. \enquote{gadget}, což je kód, který se spustí a vystaví útočníkovi původně tajné informace (přenese data do kanálu, který je plně v režii útočníka).
-Aby bylo možné takový útok provést, tak musí být známa virtuální adresa \enquote{gadgetu} v adresním prostoru.
+Pro vysvětlení uvádím seznam diagnóz s jejich očíslováním:
 
-\subsubsection{Spectre-STL}
+\begin{itemize}
+    \item (0) I63.0: Cerebral infarct, large vessel disease with significant carotid stenosis,
+    \item (3) I63.3: Cerebral infarct, other large vessel disease,
+    \item (4) I63.4: Cerebral infarct, cardic emboli,
+    \item (5) I63.5: Cerebral infarct, small vessel / lacunar,
+    \item (8) I63.8: Cerebral infarct, other / unusual cause,
+    \item (9) I63.9: Cerebral infarct, multiple / unknown cause.
+\end{itemize}
 
-Dalším způsobem, jak zlepšit výkon procesoru je zápisu aktualizovaných výsledných hodnot do vyrovnávací paměti namísto zápisu přímo do paměti k tomu určené (např. cache nebo RAM).
-Bez této nutnosti neustále načítat a ukládat data do pomalejší paměti je umožněno procesoru provádění pokynů v rychlejším tempu.
-Všechna data uložená v zásobníku se nakonec zapíšou zpět do hlavní paměti.
-Při takovém procesu vzniká riziko, že je přečten obsah vyrovnávací paměti před tím, než stačí být zapsána aktualizovaná hodnota.
-Aby se této situaci zabránilo, procesor kontroluje vyrovnávací paměť před každým čtením, které provádí.
-Při těchto operacích je povolen \enquote{unaligned access} (nezarovnaný přístup) do paměti a tak je celý proces kontroly výpočetně náročný.
-Tento proces je nazýván \enquote{disambiguace paměti}.
+\begin{figure}[htbp]
+    \includegraphics[width=.6\textwidth]{img/image_3.pdf}
+    \centering
+    \caption{Závislost mortality na věku}
+    \label{img:mrs-age}
+\end{figure}
+\FloatBarrier
 
-Jelikož je proces kontroly vyrovnávací paměti náročný, tak se používá další urychlení - \enquote{Speculative Store Buffer Bypass}.
-V případě, že process disambiguace předpoví, že načítání nebude kolidovat s~ukládáním dat do vyrovnávací paměti, tak není kontrola vyrovnávací paměti prováděna.
+Na grafu~\ref{img:mrs-age} pozorujeme, že čím je pacient starší, tím větší je riziko, že do roka po srdeční příhodě umře.
+Tato závislost je přirozená a zcela intuitivní, nehledě na data, která máme spíše pro pacienty pokročilejšího věku.
+Bylo by zajímavé sledovat stejný graf, kdybychom měli k dispozici data nezatížená biasem, kterým je právě věk.
 
-Optimalizace \enquote{Speculative Store Buffer Bypass} byla v kombinaci s \enquote{Flush+Reload} útokem zneužita k získání hodnot z vyrovnávací paměti.
-Omezením \textit{Spectre-STL} (\textit{Speculative Store Bypass}) je, že útočník může získat informace pouze z paměti, která se nachází na stejné úrovni privilegovanosti jakou má program využitý k útoku.
+\begin{figure}[htbp]
+    \includegraphics[width=.6\textwidth]{img/image_4.pdf}
+    \centering
+    \caption{Závislost mortality na celkovém NIHSS skóre}
+    \label{img:mrs-tss}
+\end{figure}
+\FloatBarrier
 
-\subsubsection{Spectre-RSB}
+\begin{figure}[htbp]
+    \includegraphics[width=.6\textwidth]{img/image_5.pdf}
+    \centering
+    \caption{Závislost mortality na rozdílu vstupního a výtupního NIHSS skóre}
+    \label{img:mrs-tss2}
+\end{figure}
+\FloatBarrier
 
-Na rozdíl od předešlých útoků, Sperctre-RSB nezneužívá prediktory větvení (branch predictors), ale \enquote{Return Stack Buffer}.
-\textit{RSB} je lokální, při změně kontextu resetovanou, kopií struktury \enquote{Call Stack}, obvykle o velikosti 4~-~16 záznamů.
-\enquote{Call Stack} je datová struktura uchovávající informace o~aktivních subprocesech počítačového programu.
+Grafy~\ref{img:mrs-tss} a~\ref{img:mrs-tss2} jsou též velice intuitivní.
+Pacienti s lepším hodnocením dle škály NIHSS mají obecně větší naději na přežití.
+Zajímavý je graf~\ref{img:mrs-tss2}, který tvoří téměř lineární závilost, ačkoliv vykreslená je logistická funkce.
 
-Příkaz \textit{return} v počítačovém programu obvykle vrací vypočtenou hodnotu funkce do místa, odkud byla funkce zavolána.
-Kam má hodnotu vrátit dohledává ve struktuře \textit{call stack}.
-Aby bylo nalezení cílové lokace rychlejší, tak se používá menší kopie - \textit{RSB}.
+\begin{figure}[htbp]
+    \includegraphics[width=.6\textwidth]{img/image_6.pdf}
+    \centering
+    \caption{Mortalita v závislosti na pohlaví}
+\end{figure}
+\FloatBarrier
 
-Ve článku \textit{Spectre Returns! Speculation Attacks using the Return Stack Buffer} je prezentováno několik variant útoku na \textit{RSB} s cílem získat data která nemají být přístupná.
+Poslední graf zobrazuje závislost mortality na pohlaví.
+Lze vyčíst, že v dostupných datech žádná statisticky signifikantní závislost není.
+Nedá se tedy určit, jestli má větší šanci na přežití infarktu muž, či žena.
 
-První varianta je způsobené přehlcením \textit{RSB}, to způsobí přepsání skutečných užitečných adres, na které by mělo být referováno, ale už nemůže být, protože se v \textit{RSB} nenachází.
+\section{Analýza přežití}
 
-Druhá varianta upravuje hodnoty v \textit{RSB} napřímo - ať už je přepisuje nebo rovnou maže.
-To způsobuje neshodu mezi hodnotami v \textit{RSB} a \textit{call stacku} a tudíž mispredikci procesoru.
+Analýza přežití, známá v angličtině pod pojmem \enquote{survival analysis} je odvětvím statistiky, které se zabývá analýzou trvání procesu či života objektu až do okamžiku vzniku události zájmu, tzv. \enquote{time-to-event data}.
+Toto odvětví má širokou škálu využití, od odhadování střední doby života, přes socio-ekonomické aplikace až po spolehlivostní inženýrství (\enquote{reliability theory}).
 
-Třetí varianta naplňuje \textit{RSB} adresami, které jsou mimo povolený adresní prostor.
-Ostatními okolnostmi popisovanými v originálním článku je pak možno na tyto adresy přistupovat bez vyvolání výjimek procesorem.
+Pro analýzu je nutné sbírat data o událostech zájmu a zaznamenávat uplynulý čas od začátku sledování po vyskytnutí události.
+V případě datasetu, dostupného k úloze, se jedná o pacienty u kterých je počáteční událostí projev ischemické choroby srdeční, tedy jeden z typů infarktu myokardu.
+Touto událostí pacient vstupuje do studie.
+Za koncovou (sledovanou) událost považujme úmrtí pacienta na následky proběhlého infarktu - tím může být infarkt samotný či například zánět osrdečníku.
 
-Čtvrtá varianta zahrnuje sdílení \textit{RSB} napříč vlákny CPU bez resetování hodnot při kontextuálním přechodu.
+Při sledování dostupných dat narazíme na několik možných variant.
+Buď data o koncové události pacienta máme k dispozici, nebo nemáme.
+Taková data nazývají jako \enquote{cenzorovaná}.
+Ať už jde o možnost, že nějaká událost nastala, ale netýkala se přímo oblasti zájmu (pacient umřel, ale ne na následky infarktu), případně nemohl být dále sledován pro účely studie (byl přeložen na jiné oddělení, či propuštěn z~nemocnice), nebo byla studie ukončena.
+
+Nasbíraná data se dají transormovat do podoby \textit{funkce přežití}, \enquote{survival function}, vyjadřující pravděpodobnost, že pacient přežije po stanovenou dobu.
+Jedna z takových funkcí je tzv. \enquote{follow-up method}.
+Ta vyjadřuje za pomocí ekvidistantních časových úseků pravděpodobnost přežití do konce intervalu.
+
+Další funkcí, která se běžně používá je Kaplan-Meierova.
+Tato metoda byla roku 1958 vymyšlena Edwardem L. Kaplanem a Paulem Meierem.
+Na rozdíl od první metody je pravděpodobnost přežití přepočítávána po každé nastalé události.
+
+\subsection{Kaplan-Meier}
+
+Pro výpočet Kaplan–Meierovy křivky potřebujeme data ve formě výskytů událostí v časových okamžicích.
+Taková data dostaneme rozdílem datumů zařazení do studie a datumů úmrtí pacientů na následky sledované příhody.
+Pacienti kteří nemají uveden datum úmrtí jsou \enquote{cenzorovaní}.
+Při vykreslování jsem nerozlišoval zda pacient umřel na následky infarktu, nebo nikoliv.
+Ve většině případů umřel právě na následky infarktu.
+Opačných případů bylo pouze několik, v rámci zachování dostatečného vzorku dat je tedy začleňuji mezi skupinu která na infarkt umřela.
+
+\begin{figure}[htbp]
+    \includegraphics[width=.6\textwidth]{img/image_7.pdf}
+    \centering
+    \caption{Délky života pacientů od výskytu příhody do úmrtí (červená) nebo do konce studie (modrá) v měsících pro jednu diagnózu}
+    \label{img:lifelines}
+\end{figure}
+\FloatBarrier
+
+Po zobrazení zaznamenaných délek života od výskytu příhody do úmrtí nebo do konce studie dostaneme graf na obrázku~\ref{img:mrs-tss}.
+Koncové časy událostí nám poslouží k výpočtů Kaplan–Meierovy křivky.
+
+Výpočet funkce přežití ukáži na ilustračním příkladu.
+Mějme sadu událostí v časech 2, 6, 6, 7, 15, 15, 16, 27, 30, 32.
+Dále máme dvě cenzorované události a to v časech 2 a 10.
+
+Vše vypíšeme do tabulky~\ref{table:kaplan-meier}.
+Veškeré časy zapíšeme do sloupce \textit{Time}, počty sledovaných událostí v časech zapíšeme do sloupce \textit{Event}, počty cenzorovaných událostí do sloupce \textit{Censored}.
+Sloupec \textit{Risk set} se snižuje podle počtu událostí, které nastaly.
+Jeho počáteční hodnota je množství všech událostí.
+Sloupec \textit{Factor} spočítáme podle uvedeného vzorce.
+Je-li v čase 15 zbývající velikost množiny 6 a nastaly 2 události, pak vypočteme hodnotu ve sloupci jako \( 1 - \frac{2}{6} \) což jsou \( \frac{2}{3} \simeq 0.667 \).
+
+Jako poslední zbývá spočítat hodnoty funkce přežití.
+Tu dostaneme tak, že přenásobíme hodnotu ve sloupci \textit{Factor} s hodnotou funkce v předchozím časovém okamžiku.
+Vezměme si tedy vypočítaný sloupec \textit{Factor} v čase 15, což odpovídá číslu \( 0.667 \).
+Poslední událost nastala v čase 10 a hodnota sloupce \textit{Survival} je v tomto čase \( 0.642 \).
+Tyto dvě hodnoty pronásobíme \( 0.642 \times 0.667 \) a dostáváme \( 0.428 \).
+Hodnota v čase 0 musí být jedna - žádná událost do té doby nenastala, pravděpodobnost přežití musí být tedy rovna jedné.
+V případě, že se nalázají události i v čase 0, pak zavádíme čas \( -1 \), ve kterém je hodnota pravděpodobnosti přežití rovna jedné.
+
+\begin{table}[htbp]
+    \centering
+
+    \begin{tabular}{SccSSS}  
+        \toprule
+        Time    & Event & Censored  & Risk set  & Factor    & Survival  \\
+        t       & d     & c         & n         & \factor   & \survival \\
+        \midrule
+         0      &       &           & 12        &           & 1         \\
+         2      & 1     & 0         & 12        & 0.917     & 0.917     \\
+         3      & 0     & 1         & 11        & 1         & 0.917     \\
+         6      & 2     & 0         & 10        & 0.8       & 0.734     \\
+         7      & 1     & 0         &  8        & 0.875     & 0.642     \\
+        10      & 0     & 1         &  7        & 1         & 0.642     \\
+        15      & 2     & 0         &  6        & 0.667     & 0.428     \\
+        16      & 1     & 0         &  4        & 0.75      & 0.321     \\
+        27      & 1     & 0         &  3        & 0.667     & 0.214     \\
+        30      & 1     & 0         &  2        & 0.5       & 0.107     \\
+        32      & 1     & 0         &  1        & 0         & 0         \\
+        \bottomrule
+    \end{tabular}    
+    
+    \caption{Kaplan–Meierova tabulka}
+    \label{table:kaplan-meier}
+\end{table}
+\FloatBarrier
+
+Po aplikaci výpočtu na dostupná data dostáváme výsledky na grafu.
+Je vidět, že pro výpočet křivek pro některé diagnózy nebylo dostatek dat.
+Výsledky jsou tedy pouze ilustrační.
+Světle modrá zóna kolem křivek jsou intervaly spolehlivosti.
+
+\begin{figure}[htbp]
+    \includegraphics[width=.8\textwidth]{img/image_8.pdf}
+    \centering
+    \caption{Kaplan–Meierovy křivky přežití pro jednotlivé diagnózy}
+\end{figure}
+\FloatBarrier
 
 \section{Závěr}
+
+Úloha byla zajímavá především tím, že dala nahlédnout do problematiky metod analýzy přežití.
+Kaplan–Meierova metoda je velice užitečnou technikou, která se dá na jednoduchých příkladech snadno spočítat i v ruce a může být případně využita i při výuce.
+
+Jako rozšíření úlohy analýzy by bylo zajímavé zhodnotit nejen pravděpodobnost přežití pacienta, ale i zakomponovat následky, s jakými bude žít.
+Kvalita života po infarktu je pro mnohé lidi mnohem důležitější než jeho případná zbylá délka.
