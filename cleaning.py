@@ -4,12 +4,39 @@ import calendar
 import datetime as dt
 
 
-def add_months(source_date, months) -> dt.date:
-    month = source_date.month - 1 + months
-    year = source_date.year + month // 12
+def add_months(d, months) -> dt.date:
+    """
+
+    :param d: Source date
+    :param months:
+    :return:
+    """
+    month = d.month - 1 + months
+    year = d.year + month // 12
     month = month % 12 + 1
-    day = min(source_date.day, calendar.monthrange(year, month)[1])
+    day = min(d.day, calendar.monthrange(year, month)[1])
     return dt.date(year, month, day)
+
+
+def to_initial_dates(start_date, end_date):
+    if end_date and end_date > add_months(start_date, 12):
+        end_date = ''
+    if not end_date:
+        return dt.datetime.min, end_date
+    difference = end_date - start_date
+    return dt.datetime.min, dt.datetime.min + difference
+
+
+def add_years(d, years):
+    """Return a date that's `years` years after the date (or datetime)
+    object `d`. Return the same calendar date (month and day) in the
+    destination year, if it exists, otherwise use the following day
+    (thus changing February 29 to March 1).
+    """
+    try:
+        return d.replace(year = d.year + years)
+    except ValueError:
+        return d + (dt.date(d.year + years, 1, 1) - dt.date(d.year, 1, 1))
 
 
 def parse_date(date):
@@ -42,6 +69,18 @@ def parse_date(date):
     return date
 
 
+def fill_end_date(df):
+    for index, row in df.iterrows():
+        current_date = row['Datum vzniku příznaku']
+        if not row['datum +']:
+            df.at[index, 'datum +'] = add_years(current_date, 1)
+            continue
+
+        end_date = row['datum +']
+        if add_years(current_date, 1) < end_date:
+            df.at[index, 'datum +'] = add_years(current_date, 1)
+
+
 def main():
     # read excel sheet
     df = pd.read_excel('data.xlsx')
@@ -51,8 +90,6 @@ def main():
     df.drop(df[df['ID3'] == 258].index, inplace=True)  # strange one, dead before admission
     df.drop(df[df['ID3'] == 563].index, inplace=True)  # strange one, the only string value in column 'TSS příjem'
     df.drop(df[df['mRS-out'] == 7].index, inplace=True)  # those are not relevant according to the assignment
-
-    # censoring
 
     # drop columns
     df.drop(columns=['ID1', 'ID3'], inplace=True)  # drop ID columns
@@ -75,7 +112,7 @@ def main():
     df['TSS prop.'] = df['TSS prop.'].astype(int)  # make this column's values numerical
 
     # clean column data
-    df['Etiolog. klas.'] = df['Etiolog. klas.'].apply(lambda x: int(x[4]))  # replace diagnosis with it's numerical code
+    df['Etiolog. klas.'] = df['Etiolog. klas.'].apply(lambda x: x[0:5])  # replace diagnosis with it's numerical code
     df['datum +'] = df['datum +'].apply(lambda x: parse_date(str(x)))  # transform end_date to correct format
     df['Datum vzniku příznaku'] = df['Datum vzniku příznaku'].apply(
         lambda x: dt.datetime.strptime(x, '%d.%m.%Y %H:%M:%S').date())  # transform start
@@ -83,6 +120,10 @@ def main():
     df['mRS - 1Y'] = df['mRS - 1Y'].apply(lambda x: int(x))
     df['Věk'] = df['Věk'].apply(lambda x: int(x))
     df['Pohlaví'] = df['Pohlaví'].apply(lambda x: str.lower(x))
+
+    df['start_date_t'], df['end_date_t'] = zip(*df.apply(
+        lambda x: to_initial_dates(x['Datum vzniku příznaku'], x['datum +']), axis=1
+    ))
 
     # rename columns
     df.rename(columns={'Datum vzniku příznaku': 'start_date',

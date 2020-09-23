@@ -1,24 +1,25 @@
 from textwrap import wrap
+from collections import OrderedDict
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib.lines import Line2D
 from lifelines import KaplanMeierFitter
 from lifelines.plotting import plot_lifetimes
 from lifelines.utils import datetimes_to_durations
 
 from utils import start_end_for_diagnosis, image_sequence
 
-diagnosis_list = {
-    0: 'I63.0: Cerebral infarct, large vessel disease with significant carotid stenosis',
-    3: 'I63.3: Cerebral infarct, other large vessel disease',
-    4: 'I63.4: Cerebral infarct, cardic emboli',
-    5: 'I63.5: Cerebral infarct, small vessel / lacunar',
-    8: 'I63.8: Cerebral infarct, other / unusual cause',
-    9: 'I63.9: Cerebral infarct, multiple / unknown cause'
-}
-
+diagnosis_list = OrderedDict({
+    'I63.0': 'I63.0: Cerebral infarct, large vessel disease with significant carotid stenosis',
+    'I63.3': 'I63.3: Cerebral infarct, other large vessel disease',
+    'I63.4': 'I63.4: Cerebral infarct, cardic emboli',
+    'I63.5': 'I63.5: Cerebral infarct, small vessel / lacunar',
+    'I63.8': 'I63.8: Cerebral infarct, other / unusual cause',
+    'I63.9': 'I63.9: Cerebral infarct, multiple / unknown cause'
+})
 
 GEN = image_sequence()
 
@@ -35,7 +36,7 @@ def kaplan_meier_analysis(df, rows=2, columns=3):
     fig, axes = plt.subplots(rows, columns, figsize=[10, 6])
 
     for pos, diagnosis in enumerate(diagnosis_list):
-        timeline = np.linspace(0, 21)
+        timeline = np.linspace(0, 12)
 
         # initialize start and end times
         start_times, end_times = start_end_for_diagnosis(df, diagnosis)
@@ -55,10 +56,14 @@ def kaplan_meier_analysis(df, rows=2, columns=3):
         # plot Kaplan-Meier
         kmf.plot(ax=ax)
 
+        # create legend
+        legend_elements = [Line2D([0], [0], color='b', lw=1, label=f'n = {len(start_times)}')]
+
         # format plot
-        ax.set_ylim(0.45, 1)
+        ax.set_ylim(0, 1)
+        ax.set_xlabel('Time in months')
         ax.set_title('\n'.join(wrap(diagnosis_list[diagnosis], 30)))
-        ax.get_legend().remove()
+        ax.legend(handles=legend_elements, loc='lower right')
         ax.margins(y=50)
 
     # show plot
@@ -139,7 +144,7 @@ def main():
     # read cleaned data
     df = pd.read_csv('data.csv')
 
-    plot_hist(df, 'age', 'Věk', 'Počet pacientů', x_lim=25, x_ticks=np.arange(25, 95, 5))
+    plot_hist(df, 'age', 'Věk', 'Počet pacientů', x_lim=25, x_ticks=np.arange(25, 100, 5))
 
     plot_hist(df, 'mrs_1y', 'mRS - 1Y', 'Počet pacientů')
 
@@ -174,7 +179,7 @@ def main():
     fig.savefig(f'paper/img/image_{next(GEN)}.pdf', format='pdf')
 
     # plot lifetimes graph
-    plot_lifetimes_for_diagnosis(df, diagnosis=3)
+    plot_lifetimes_for_diagnosis(df, diagnosis='I63.3')
 
     # plot kaplan-meier curves
     kaplan_meier_analysis(df)
